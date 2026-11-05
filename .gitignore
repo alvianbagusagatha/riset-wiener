@@ -1,0 +1,20 @@
+# lingkungan Python dan cache
+.venv/
+__pycache__/
+*.pyc
+*.nbi
+*.nbc
+.pytest_cache/
+
+# hasil hitungan milik masing-masing pengguna
+hasil/
+
+# penanda versi dari peluncur (lihat alat/jalankan.py)
+.versi
+.berkas_terpasang
+
+# rahasia Streamlit dan berkas sistem
+.streamlit/secrets.toml
+.DS_Store
+Thumbs.db
+~$*

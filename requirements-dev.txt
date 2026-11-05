@@ -1,0 +1,4 @@
+# untuk pengembang: pengujian dan uji silang
+-r requirements.txt
+pytest>=7.0
+networkx>=3.3

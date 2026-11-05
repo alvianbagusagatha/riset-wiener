@@ -1,0 +1,3 @@
+# berkas .bat harus CRLF, berkas .command harus LF; simpan apa adanya
+*.bat -text
+*.command -text
