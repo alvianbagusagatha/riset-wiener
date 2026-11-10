@@ -295,7 +295,8 @@ def data_galeri(h: HasilGraf) -> dict | None:
     indeks = {e_: i for i, e_ in enumerate(G.sisi)}
     if h.daftar is not None:
         pohon = [{"no": p.nomor, "w": p.W, "s": [indeks[x] for x in p.sisi]} for p in h.daftar]
-        catatan = ""
+        catatan = "" if h.daftar_lengkap else (
+            f"Sampel {len(h.daftar):,} dari τ = {h.tau:,} pohon".replace(",", "."))
     else:
         pohon = [{"no": 1, "w": h.contoh_min.W, "s": [indeks[x] for x in h.contoh_min.sisi],
                   "judul": "Contoh pohon minimum"},
@@ -304,7 +305,8 @@ def data_galeri(h: HasilGraf) -> dict | None:
         catatan = "Hanya contoh minimum & maksimum (daftar lengkap untuk τ ≤ 5.000)."
     ident = re.sub(r"\W", "", f"{G.kode}{h.tau}{e.waktu}")
     return {"id": ident, "lebar": LEBAR, "tinggi": tinggi, "titik": titik, "sisi": [list(x) for x in G.sisi],
-            "pohon": pohon, "wmin": e.w_min, "wmaks": e.w_maks, "lengkap": h.daftar is not None,
+            "pohon": pohon, "wmin": e.w_min, "wmaks": e.w_maks,
+            "lengkap": h.daftar is not None and h.daftar_lengkap,
             "tau_teks": f"{h.tau:,}".replace(",", "."), "catatan": catatan}
 
 

@@ -153,7 +153,11 @@ def simpan_excel_graf(h: HasilGraf, jalur: Path) -> Path:
     _tulis_contoh(wb.create_sheet("Contoh maksimum"), h, h.contoh_maks, "maksimum")
 
     if h.daftar is not None:
-        p = _Penulis(wb.create_sheet("Daftar spanning tree"))
+        p = _Penulis(wb.create_sheet("Daftar spanning tree" if h.daftar_lengkap else "Sampel spanning tree"))
+        if not h.daftar_lengkap:
+            p.info("Keterangan", f"Sampel {len(h.daftar)} dari τ = {h.tau} pohon: contoh minimum, contoh "
+                                 "maksimum, dan sampel acak seragam, diurutkan menurut W.")
+            p.kosong()
         D = max((max(t.distribusi.N) for t in h.daftar if t.distribusi.N), default=1)
         header = ["No", "Sisi"] + [f"N_{t}" for t in range(1, D + 1)] + ["W"]
         isi = []

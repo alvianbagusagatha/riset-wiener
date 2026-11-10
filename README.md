@@ -14,7 +14,8 @@ Yang dihitung:
    - Enumerasi semua spanning tree (tanpa batas) dengan W(T) = Σ n1(e)·n2(e);
      W minimum/maksimum, banyak pohonnya, dan sebaran W.
    - Contoh pohon minimum & maksimum (sisi, N_t, pasangan per jarak).
-   - Daftar semua pohon jika τ ≤ 1000, gambar kisi semua pohon jika τ ≤ 100.
+   - Daftar semua pohon jika τ ≤ 5000 (selebihnya sampel acak 5000 pohon), gambar kisi
+     semua pohon jika τ ≤ 100.
 4. **Pola n**: tabel per n dan pencarian rumus polinom otomatis (pecahan eksak, derajat ≤ 4;
    satu rumus → paritas n → n mod 4; pengecualian n kecil dilaporkan sebagai "n ≥ n0"),
    lengkap dengan tabel selisih berhingga. Keluarga graf bisa dipilih dari daftar bawaan
@@ -142,7 +143,10 @@ dengan sisa waktu, dan tombol **Stop** di pojok kanan atas.
   putar/jeda, maju/mundur, penggeser, dan pilihan kecepatan untuk memutar semua pohon berurutan.
 - Unduhan: `*_semua_pohon.png/.pdf` (τ ≤ 100) atau PDF berhalaman berisi semua pohon
   (48 per halaman; otomatis untuk τ ≤ 1.000, dengan tombol untuk τ ≤ 5.000).
-- Untuk τ > 5.000 galeri menampilkan contoh pohon minimum dan maksimum.
+- Untuk τ > 5.000 galeri menampilkan **5.000 pohon**: contoh minimum, contoh maksimum, dan
+  sampel acak seragam (algoritma Wilson; setiap pohon berpeluang sama terpilih), diurutkan
+  menurut W. Sampelnya sama setiap kali dihitung, dan juga ada di sheet Excel
+  "Sampel spanning tree" serta PDF `*_sampel_pohon.pdf` (lewat tombol).
 
 ### Menggambar graf
 
@@ -201,7 +205,7 @@ lebih besar bisa butuh berjam-jam. τ sendiri selalu dihitung tepat dan seketika
 Semua berkas disimpan di `hasil/<nama_graf>_n<n>/`, misalnya `hasil/CL_n7/`:
 
 - `CL_n7.xlsx` — sheet: Graf, Distribusi jarak, Sebaran W spanning tree, Contoh minimum,
-  Contoh maksimum, Daftar spanning tree (jika τ ≤ 1000).
+  Contoh maksimum, Daftar spanning tree (τ ≤ 5000) atau Sampel spanning tree (τ > 5000).
 - `CL_n7_graf.png/.pdf`, `CL_n7_pohon_minimum.png/.pdf`, `CL_n7_pohon_maksimum.png/.pdf`,
   dan `CL_n7_semua_pohon.png/.pdf` (jika τ ≤ 100). PNG 300 dpi.
 - `CL_n7.tex` — tabel distribusi jarak, sebaran W, dan persamaan (butuh `amsmath`).

@@ -46,8 +46,11 @@ def simpan_pdf_semua_pohon(h: HasilGraf, akar: str | Path = "hasil") -> Path:
     from . import gambar as gb
 
     G = h.graf
-    return gb.gambar_kisi_pdf(G, h.daftar, Path(akar) / G.kode / f"{G.kode}_semua_pohon.pdf",
-                              judul=f"Semua {h.tau} spanning tree {G.nama} (urut menurut W)")
+    if h.daftar_lengkap:
+        return gb.gambar_kisi_pdf(G, h.daftar, Path(akar) / G.kode / f"{G.kode}_semua_pohon.pdf",
+                                  judul=f"Semua {h.tau} spanning tree {G.nama} (urut menurut W)")
+    return gb.gambar_kisi_pdf(G, h.daftar, Path(akar) / G.kode / f"{G.kode}_sampel_pohon.pdf",
+                              judul=f"Sampel {len(h.daftar)} dari {h.tau} spanning tree {G.nama} (urut menurut W)")
 
 
 def simpan_hasil_pola(hp: HasilPola, akar: str | Path = "hasil") -> dict[str, list[Path]]:

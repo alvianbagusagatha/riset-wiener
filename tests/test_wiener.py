@@ -70,6 +70,25 @@ def test_cl7():
     assert (e.w_min, e.banyak_min) == (315, 56)
     assert (e.w_maks, e.banyak_maks) == (455, 350)
     assert h.contoh_min.W == 315 and h.contoh_maks.W == 455
+    # τ > 5000: galeri berisi sampel 5000 pohon berbeda, termasuk minimum & maksimum
+    assert not h.daftar_lengkap and len(h.daftar) == 5000
+    assert len({frozenset(t.sisi) for t in h.daftar}) == 5000
+    assert h.daftar[0].W == 315 and h.daftar[-1].W == 455
+    assert [t.nomor for t in h.daftar] == list(range(1, 5001))
+
+
+def test_sampel_wilson_valid_dan_tetap():
+    from wiener.enumerasi import pohon_acak_seragam
+    from wiener.jarak import wiener_pohon_rumus_sisi
+    G = graf_keluarga("CL", 9)
+    a = pohon_acak_seragam(G, 300, seed=7)
+    assert a == pohon_acak_seragam(G, 300, seed=7)              # sampel tetap
+    assert len({frozenset(p) for p in a}) == 300
+    sisi = set(G.sisi)
+    for p in a:
+        assert len(p) == G.banyak_titik - 1 and set(p) <= sisi
+        assert distribusi_jarak(G.subgraf_sisi(p)).terhubung    # n-1 sisi + terhubung = pohon
+        assert 0 < wiener_pohon_rumus_sisi(G.banyak_titik, p)
 
 
 # --------------------------------------------------------------------- CL_n, n = 3..12

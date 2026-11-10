@@ -15,7 +15,7 @@ import streamlit as st
 from editor_graf import CONTOH_POLA, editor_graf, graf_ke_gambar, muat_ke_editor, teks_sisi
 from galeri_pohon import galeri_pohon
 from tampilan import gaya, hero
-from wiener.analisis import BATAS_DAFTAR_POHON, analisis_graf, format_angka
+from wiener.analisis import analisis_graf, format_angka
 from wiener.enumerasi import ADA_NUMBA, info_numba
 from wiener.graf import KELUARGA, graf_dari_gambar, graf_keluarga
 from wiener.matriks_pohon import banyak_spanning_tree
@@ -330,18 +330,24 @@ with tab_graf:
                     st.info(h.catatan_enumerasi)
                 else:
                     if h.daftar is None:
-                        st.info(f"τ = {format_angka(h.tau)} terlalu banyak untuk ditampilkan satu per satu "
-                                f"(galeri lengkap untuk τ ≤ {format_angka(BATAS_DAFTAR_POHON)}). "
-                                "Yang ditampilkan: contoh pohon minimum dan maksimum.", icon=":material/info:")
+                        st.info("Yang ditampilkan: contoh pohon minimum dan maksimum.", icon=":material/info:")
+                    elif not h.daftar_lengkap:
+                        st.info(f"τ = {format_angka(h.tau)} pohon, jadi galeri menampilkan "
+                                f"**{format_angka(len(h.daftar))} pohon**: contoh minimum, contoh maksimum, dan "
+                                "sampel acak seragam (setiap pohon berpeluang sama terpilih), diurutkan menurut W. "
+                                "Banyak pohon per W pada saringan adalah hitungan di dalam sampel; sebaran W "
+                                "untuk semua pohon ada di tab Spanning tree. Nomor sama dengan sheet Sampel di Excel.",
+                                icon=":material/info:")
                     else:
                         st.caption("Semua spanning tree, nomor sama dengan daftar di Excel. Klik sebuah kartu untuk "
                                    "melihat animasinya, atau buka tab Animasi untuk memutar semua pohon.")
                     galeri_pohon(h, key="galeri")
-                    if h.daftar is not None and h.tau > BATAS_PDF_SEMUA_POHON:
+                    if h.daftar is not None and len(h.daftar) > BATAS_PDF_SEMUA_POHON:
                         pdf = st.session_state.get("pdf_semua")
                         if pdf is None:
-                            st.button(f"Buat PDF semua {format_angka(h.tau)} pohon", icon=":material/picture_as_pdf:",
-                                      on_click=_buat_pdf_semua, args=(h,))
+                            label = (f"Buat PDF semua {format_angka(h.tau)} pohon" if h.daftar_lengkap
+                                     else f"Buat PDF {format_angka(len(h.daftar))} pohon sampel")
+                            st.button(label, icon=":material/picture_as_pdf:", on_click=_buat_pdf_semua, args=(h,))
                         else:
                             st.download_button(pdf.name, pdf.read_bytes(), file_name=pdf.name, mime="application/pdf",
                                                icon=":material/picture_as_pdf:", type="primary")
@@ -360,7 +366,8 @@ with tab_graf:
                                                for t, p in d.pasangan.items()],
                                               columns=["t", "Banyak", "Pasangan"]), hide_index=True)
                 if h.daftar is not None:
-                    st.markdown(f"**Daftar semua {len(h.daftar)} spanning tree**")
+                    st.markdown(f"**Daftar semua {format_angka(len(h.daftar))} spanning tree**" if h.daftar_lengkap else
+                                f"**Sampel {format_angka(len(h.daftar))} dari {format_angka(h.tau)} spanning tree**")
                     D = max(max(t.distribusi.N) for t in h.daftar)
                     st.dataframe(pd.DataFrame(
                         [[t.nomor, ", ".join(G.nama_sisi(s) for s in t.sisi)]
