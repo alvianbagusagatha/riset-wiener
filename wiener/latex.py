@@ -56,8 +56,14 @@ def latex_graf(h: HasilGraf) -> str:
         if h.contoh_min is not None:
             bag.append(_tabel_distribusi(h.contoh_min.distribusi, rf"T_{{\min}} \subseteq {nt}",
                                          r"W(T_{\min})", f"tab:jarak-min-{kode}"))
+        if h.contoh_maks is not None:
             bag.append(_tabel_distribusi(h.contoh_maks.distribusi, rf"T_{{\max}} \subseteq {nt}",
                                          r"W(T_{\max})", f"tab:jarak-maks-{kode}"))
+    elif h.contoh_min is not None:
+        bag += [f"% {h.catatan_enumerasi}", r"\begin{equation}",
+                rf"\min_{{T \text{{ ditemukan}}}} W(T) = {h.contoh_min.W}", r"\end{equation}", ""]
+        bag.append(_tabel_distribusi(h.contoh_min.distribusi, rf"T \subseteq {nt}",
+                                     r"W(T)", f"tab:jarak-min-{kode}"))
     return "\n".join(bag)
 
 

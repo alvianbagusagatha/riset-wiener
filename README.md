@@ -14,8 +14,8 @@ Yang dihitung:
    - Enumerasi semua spanning tree (tanpa batas) dengan W(T) = Σ n1(e)·n2(e);
      W minimum/maksimum, banyak pohonnya, dan sebaran W.
    - Contoh pohon minimum & maksimum (sisi, N_t, pasangan per jarak).
-   - Daftar semua pohon jika τ ≤ 5000 (selebihnya sampel acak 5000 pohon), gambar kisi
-     semua pohon jika τ ≤ 100.
+   - Daftar semua pohon jika τ ≤ 5000 (selebihnya 5000 pohon dengan W terkecil), gambar kisi
+     semua pohon jika τ ≤ 100. Graf dengan τ sangat besar memakai mode cepat (lihat bawah).
 4. **Pola n**: tabel per n dan pencarian rumus polinom otomatis (pecahan eksak, derajat ≤ 4;
    satu rumus → paritas n → n mod 4; pengecualian n kecil dilaporkan sebagai "n ≥ n0"),
    lengkap dengan tabel selisih berhingga. Keluarga graf bisa dipilih dari daftar bawaan
@@ -105,7 +105,8 @@ Opsi penting:
 
 | Opsi | Arti |
 |---|---|
-| `--batas N` | opsional: lewati enumerasi jika τ > N (bawaan: tanpa batas) |
+| `--batas N` | opsional: pakai mode cepat jika τ > N (bawaan: tanpa batas) |
+| `--lengkap` / `--cepat` | paksa enumerasi semua pohon / paksa mode cepat (bawaan: otomatis, cepat bila > 20 detik) |
 | `--keluaran FOLDER` | folder akar keluaran (bawaan `hasil`) |
 | `--tambahan K` | (pola) banyak n tambahan di atas rentang untuk memverifikasi rumus \|V\|, \|E\|, W(G), τ (bawaan 6) |
 | `--tanpa-gambar`, `--tanpa-simpan`, `--tanpa-progres` | lewati gambar / penyimpanan / bilah progres |
@@ -143,10 +144,24 @@ dengan sisa waktu, dan tombol **Stop** di pojok kanan atas.
   putar/jeda, maju/mundur, penggeser, dan pilihan kecepatan untuk memutar semua pohon berurutan.
 - Unduhan: `*_semua_pohon.png/.pdf` (τ ≤ 100) atau PDF berhalaman berisi semua pohon
   (48 per halaman; otomatis untuk τ ≤ 1.000, dengan tombol untuk τ ≤ 5.000).
-- Untuk τ > 5.000 galeri menampilkan **5.000 pohon**: contoh minimum, contoh maksimum, dan
-  sampel acak seragam (algoritma Wilson; setiap pohon berpeluang sama terpilih), diurutkan
-  menurut W. Sampelnya sama setiap kali dihitung, dan juga ada di sheet Excel
-  "Sampel spanning tree" serta PDF `*_sampel_pohon.pdf` (lewat tombol).
+- Untuk τ > 5.000 galeri menampilkan **5.000 pohon dengan W terkecil** (No. 1 = W terkecil),
+  juga di sheet Excel "W terkecil" dan PDF `*_pohon_w_terkecil.pdf` (lewat tombol).
+
+### Mode cepat untuk graf dengan τ sangat besar
+
+Enumerasi semua pohon butuh waktu sebanding dengan τ; graf gambar dengan ±35 titik dan ±60 sisi
+bisa punya τ ≈ 10¹³ (berhari-hari). Karena itu:
+
+- **Otomatis**: bila enumerasi diperkirakan > 20 detik, aplikasi memakai **mode cepat**:
+  τ tetap dihitung tepat, lalu 5.000 pohon dengan W terkecil dicari langsung (beberapa detik)
+  tanpa menghitung semua pohon. Sebaran W dan W maksimum tidak dihitung.
+- Centang **"Hitung semua pohon walaupun lama"** (CLI: `--lengkap`) untuk enumerasi penuh.
+  Pada mode lengkap, 5.000 W terkecil dicocokkan dengan sebaran W semua pohon (pasti).
+- Cara kerja pencarian (`wiener/terkecil.py`): mulai dari pohon BFS setiap titik, lalu
+  pencarian terbaik-dahulu dengan menukar satu sisi (T − e + f) sampai semua 5.000 pohon
+  terkecil yang ditemukan sudah diperiksa tetangganya. Mencari W(T) minimum adalah masalah
+  NP-hard, jadi hasil mode cepat **belum dijamin** minimum mutlak; dalam pengujian terhadap
+  enumerasi lengkap (CLₙ, Kₙ, Mₙ, Wₙ, graf acak) ke-5.000 nilai W-nya selalu sama persis.
 
 ### Menggambar graf
 
@@ -205,7 +220,7 @@ lebih besar bisa butuh berjam-jam. τ sendiri selalu dihitung tepat dan seketika
 Semua berkas disimpan di `hasil/<nama_graf>_n<n>/`, misalnya `hasil/CL_n7/`:
 
 - `CL_n7.xlsx` — sheet: Graf, Distribusi jarak, Sebaran W spanning tree, Contoh minimum,
-  Contoh maksimum, Daftar spanning tree (τ ≤ 5000) atau Sampel spanning tree (τ > 5000).
+  Contoh maksimum, Daftar spanning tree (τ ≤ 5000) atau W terkecil (τ > 5000).
 - `CL_n7_graf.png/.pdf`, `CL_n7_pohon_minimum.png/.pdf`, `CL_n7_pohon_maksimum.png/.pdf`,
   dan `CL_n7_semua_pohon.png/.pdf` (jika τ ≤ 100). PNG 300 dpi.
 - `CL_n7.tex` — tabel distribusi jarak, sebaran W, dan persamaan (butuh `amsmath`).
@@ -249,6 +264,7 @@ wiener/            modul inti
   jarak.py         BFS, distribusi jarak N_t, W
   matriks_pohon.py Laplacian + determinan Bareiss (τ eksak)
   enumerasi.py     enumerasi spanning tree (Numba, paralel) + cadangan Python murni
+  terkecil.py      mode cepat: cari 5000 pohon W terkecil tanpa enumerasi (tukar sisi)
   analisis.py      analisis lengkap satu graf
   pola.py          tabel pola n, interpolasi pecahan, pencarian rumus, selisih berhingga
   pola_gambar.py   keluarga G_n dari gambar: tebak pola nama titik + operasi graf

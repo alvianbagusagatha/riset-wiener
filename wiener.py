@@ -53,7 +53,8 @@ def perintah_graf(arg) -> int:
     print(GARIS)
     print(f"Graf {G.nama}   ({info_numba()})")
     print(GARIS)
-    h = analisis_graf(G, batas=arg.batas, progres=not arg.tanpa_progres)
+    mode = "lengkap" if arg.lengkap else "cepat" if arg.cepat else "otomatis"
+    h = analisis_graf(G, batas=arg.batas, progres=not arg.tanpa_progres, mode=mode)
     d = h.distribusi
     print(f"|V| = {G.banyak_titik}, |E| = {G.banyak_sisi}")
     print("V(G) = {" + ", ".join(G.titik) + "}")
@@ -77,6 +78,10 @@ def perintah_graf(arg) -> int:
     e = h.enumerasi
     if e is None:
         print(h.catatan_enumerasi)
+        if h.contoh_min is not None:
+            print(f"W terkecil yang ditemukan = {h.contoh_min.W}; pohon ke-{len(h.daftar)} W = {h.daftar[-1].W}")
+            print("Pohon W terkecil ditemukan: " + ", ".join(G.nama_sisi(s) for s in h.contoh_min.sisi))
+            print("Gunakan --lengkap untuk enumerasi semua pohon (bisa sangat lama).")
     else:
         print(f"Enumerasi: {format_angka(e.banyak)} pohon dalam {e.waktu:.2f} detik "
               f"({'cocok' if e.banyak == h.tau else 'TIDAK cocok'} dengan τ)")
@@ -155,7 +160,7 @@ def buat_parser() -> argparse.ArgumentParser:
 
     def opsi_umum(sp):
         sp.add_argument("--batas", type=int, default=BATAS_ENUMERASI_BAWAAN,
-                        help="opsional: lewati enumerasi jika τ melebihi angka ini (bawaan: tanpa batas)")
+                        help="opsional: pakai mode cepat jika τ melebihi angka ini (bawaan: tanpa batas)")
         sp.add_argument("--keluaran", default="hasil", help="folder akar keluaran (bawaan: hasil)")
         sp.add_argument("--tanpa-simpan", action="store_true", help="jangan simpan berkas keluaran")
         sp.add_argument("--tanpa-progres", action="store_true", help="sembunyikan bilah progres")
@@ -166,6 +171,11 @@ def buat_parser() -> argparse.ArgumentParser:
     sumber.add_argument("--kustom", help="berkas .txt berisi daftar sisi, atau teks seperti \"x1-x2, x2-x3\"")
     g.add_argument("--n", type=int, help="parameter n keluarga graf")
     g.add_argument("--tanpa-gambar", action="store_true", help="jangan buat gambar PNG/PDF")
+    mode = g.add_mutually_exclusive_group()
+    mode.add_argument("--lengkap", action="store_true",
+                      help="selalu enumerasi semua pohon (bawaan: otomatis mode cepat bila butuh > 20 detik)")
+    mode.add_argument("--cepat", action="store_true",
+                      help="tanpa enumerasi lengkap: hanya cari 5000 pohon dengan W terkecil")
     opsi_umum(g)
     g.set_defaults(fungsi=perintah_graf)
 

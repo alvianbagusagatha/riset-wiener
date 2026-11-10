@@ -144,7 +144,7 @@ function svgPohon(data, pohon, opsi) {
 }
 
 function lencana(data, w) {
-  if (w === data.wmin) return '<span class="lencana min">minimum</span>';
+  if (w === data.wmin) return `<span class="lencana min">${data.label_min || "minimum"}</span>`;
   if (w === data.wmaks) return '<span class="lencana maks">maksimum</span>';
   return "";
 }
@@ -166,7 +166,7 @@ export default function (component) {
     const hitung = new Map();
     data.pohon.forEach((p) => hitung.set(p.w, (hitung.get(p.w) || 0) + 1));
     [...hitung.keys()].sort((a, b) => a - b).forEach((w) => {
-      const tanda = w === data.wmin ? " · minimum" : w === data.wmaks ? " · maksimum" : "";
+      const tanda = w === data.wmin ? ` · ${data.label_min || "minimum"}` : w === data.wmaks ? " · maksimum" : "";
       opsi.push(`<option value="${w}">W = ${w} (${hitung.get(w)} pohon)${tanda}</option>`);
     });
     saring.innerHTML = opsi.join("");
@@ -266,7 +266,7 @@ _GALERI = st.components.v2.component("galeri_pohon_wiener", html=_HTML, css=_CSS
 
 def data_galeri(h: HasilGraf) -> dict | None:
     G, e = h.graf, h.enumerasi
-    if e is None or h.contoh_min is None:
+    if not h.daftar:
         return None
     pos = posisi_graf(G)
     xs = [p[0] for p in pos.values()]
@@ -293,21 +293,15 @@ def data_galeri(h: HasilGraf) -> dict | None:
         titik.append({"n": t, "x": round(x, 1), "y": round(y, 1), "m": t.startswith("x"),
                       "lx": round(lx, 1), "ly": round(ly, 1)})
     indeks = {e_: i for i, e_ in enumerate(G.sisi)}
-    if h.daftar is not None:
-        pohon = [{"no": p.nomor, "w": p.W, "s": [indeks[x] for x in p.sisi]} for p in h.daftar]
-        catatan = "" if h.daftar_lengkap else (
-            f"Sampel {len(h.daftar):,} dari τ = {h.tau:,} pohon".replace(",", "."))
-    else:
-        pohon = [{"no": 1, "w": h.contoh_min.W, "s": [indeks[x] for x in h.contoh_min.sisi],
-                  "judul": "Contoh pohon minimum"},
-                 {"no": 2, "w": h.contoh_maks.W, "s": [indeks[x] for x in h.contoh_maks.sisi],
-                  "judul": "Contoh pohon maksimum"}]
-        catatan = "Hanya contoh minimum & maksimum (daftar lengkap untuk τ ≤ 5.000)."
-    ident = re.sub(r"\W", "", f"{G.kode}{h.tau}{e.waktu}")
+    pohon = [{"no": p.nomor, "w": p.W, "s": [indeks[x] for x in p.sisi]} for p in h.daftar]
+    catatan = "" if h.daftar_lengkap else (
+        f"{len(h.daftar):,} W terkecil dari τ = {h.tau:,} pohon".replace(",", ".")
+        + (" · mode cepat" if h.mode == "cepat" else ""))
+    ident = re.sub(r"\W", "", f"{G.kode}{h.tau}{len(pohon)}{h.mode}{e.waktu if e else id(h)}")
     return {"id": ident, "lebar": LEBAR, "tinggi": tinggi, "titik": titik, "sisi": [list(x) for x in G.sisi],
-            "pohon": pohon, "wmin": e.w_min, "wmaks": e.w_maks,
-            "lengkap": h.daftar is not None and h.daftar_lengkap,
-            "tau_teks": f"{h.tau:,}".replace(",", "."), "catatan": catatan}
+            "pohon": pohon, "wmin": e.w_min if e else h.contoh_min.W, "wmaks": e.w_maks if e else None,
+            "label_min": "minimum" if e else "terkecil",
+            "lengkap": h.daftar_lengkap, "tau_teks": f"{h.tau:,}".replace(",", "."), "catatan": catatan}
 
 
 def galeri_pohon(h: HasilGraf, key: str = "galeri_pohon") -> None:

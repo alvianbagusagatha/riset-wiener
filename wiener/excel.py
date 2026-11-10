@@ -91,11 +91,15 @@ def _tulis_contoh(ws, h: HasilGraf, pohon: InfoPohon | None, jenis: str):
     G = h.graf
     e = h.enumerasi
     p.info("Graf", G.nama)
-    p.info(f"W {jenis}", pohon.W)
-    p.info(f"Banyak pohon dengan W = {pohon.W}",
-           e.banyak_min if jenis == "minimum" else e.banyak_maks)
+    if e is None:
+        p.info(f"W {jenis} yang ditemukan (mode cepat)", pohon.W)
+        p.info("Keterangan", h.catatan_enumerasi)
+    else:
+        p.info(f"W {jenis}", pohon.W)
+        p.info(f"Banyak pohon dengan W = {pohon.W}",
+               e.banyak_min if jenis == "minimum" else e.banyak_maks)
     if h.daftar is not None:
-        p.info("Nomor pada daftar", pohon.nomor)
+        p.info("Nomor pada daftar", pohon.nomor if pohon.nomor else "tidak termasuk daftar")
     p.info("Sisi pohon", ", ".join(G.nama_sisi(s) for s in pohon.sisi))
     dibuang = sorted(set(G.sisi) - set(pohon.sisi))
     p.info("Sisi yang dibuang", ", ".join(G.nama_sisi(s) for s in dibuang))
@@ -153,10 +157,9 @@ def simpan_excel_graf(h: HasilGraf, jalur: Path) -> Path:
     _tulis_contoh(wb.create_sheet("Contoh maksimum"), h, h.contoh_maks, "maksimum")
 
     if h.daftar is not None:
-        p = _Penulis(wb.create_sheet("Daftar spanning tree" if h.daftar_lengkap else "Sampel spanning tree"))
+        p = _Penulis(wb.create_sheet("Daftar spanning tree" if h.daftar_lengkap else "W terkecil"))
         if not h.daftar_lengkap:
-            p.info("Keterangan", f"Sampel {len(h.daftar)} dari τ = {h.tau} pohon: contoh minimum, contoh "
-                                 "maksimum, dan sampel acak seragam, diurutkan menurut W.")
+            p.info("Keterangan", h.keterangan_daftar)
             p.kosong()
         D = max((max(t.distribusi.N) for t in h.daftar if t.distribusi.N), default=1)
         header = ["No", "Sisi"] + [f"N_{t}" for t in range(1, D + 1)] + ["W"]

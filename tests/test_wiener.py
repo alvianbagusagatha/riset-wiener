@@ -70,25 +70,49 @@ def test_cl7():
     assert (e.w_min, e.banyak_min) == (315, 56)
     assert (e.w_maks, e.banyak_maks) == (455, 350)
     assert h.contoh_min.W == 315 and h.contoh_maks.W == 455
-    # τ > 5000: galeri berisi sampel 5000 pohon berbeda, termasuk minimum & maksimum
-    assert not h.daftar_lengkap and len(h.daftar) == 5000
+    # τ > 5000: daftar/galeri = 5000 pohon dengan W terkecil (pasti)
+    assert not h.daftar_lengkap and h.terverifikasi and h.mode == "lengkap"
+    assert [t.W for t in h.daftar] == _w_terkecil(e.sebaran, 5000)
     assert len({frozenset(t.sisi) for t in h.daftar}) == 5000
-    assert h.daftar[0].W == 315 and h.daftar[-1].W == 455
     assert [t.nomor for t in h.daftar] == list(range(1, 5001))
 
 
-def test_sampel_wilson_valid_dan_tetap():
-    from wiener.enumerasi import pohon_acak_seragam
+def _w_terkecil(sebaran, k):
+    hasil = []
+    for w in sorted(sebaran):
+        hasil += [w] * min(sebaran[w], k - len(hasil))
+    return hasil[:k]
+
+
+@pytest.mark.parametrize("kode,n", [("CL", 9), ("K", 8), ("M", 9), ("W", 12)])
+def test_pencarian_w_terkecil_sama_dengan_pasti(kode, n):
+    """Pencarian cepat (tanpa enumerasi) harus menemukan W terkecil yang sama dengan enumerasi lengkap."""
     from wiener.jarak import wiener_pohon_rumus_sisi
-    G = graf_keluarga("CL", 9)
-    a = pohon_acak_seragam(G, 300, seed=7)
-    assert a == pohon_acak_seragam(G, 300, seed=7)              # sampel tetap
-    assert len({frozenset(p) for p in a}) == 300
+    from wiener.terkecil import cari_pohon_terkecil
+    G = graf_keluarga(kode, n)
+    tau = banyak_spanning_tree(G)
+    pasti = _w_terkecil(enumerasi_spanning_tree(G, tau=tau, progres=False).sebaran, 5000)
+    c = cari_pohon_terkecil(G, 5000)
+    assert c.tuntas and c.w == pasti
+    assert len({frozenset(p) for p in c.pohon}) == 5000
     sisi = set(G.sisi)
-    for p in a:
-        assert len(p) == G.banyak_titik - 1 and set(p) <= sisi
-        assert distribusi_jarak(G.subgraf_sisi(p)).terhubung    # n-1 sisi + terhubung = pohon
-        assert 0 < wiener_pohon_rumus_sisi(G.banyak_titik, p)
+    for p, w in zip(c.pohon[:200], c.w):
+        assert set(p) <= sisi and distribusi_jarak(G.subgraf_sisi(p)).terhubung
+        assert wiener_pohon_rumus_sisi(G.banyak_titik, p) == w
+
+
+def test_mode_cepat_tanpa_enumerasi():
+    h = analisis_graf(graf_keluarga("CL", 10), progres=False, mode="cepat")
+    assert h.mode == "cepat" and h.enumerasi is None and not h.terverifikasi
+    assert len(h.daftar) == 5000 and h.contoh_min.W == 850 and h.contoh_maks is None
+    assert h.daftar[0].W == 850 and h.daftar[-1].W == 874
+
+
+def test_mode_otomatis_memilih_cepat_untuk_tau_raksasa():
+    # K_14: τ = 14^12 ≈ 5,7·10^13 -> enumerasi mustahil, harus otomatis mode cepat
+    h = analisis_graf(graf_keluarga("K", 14), progres=False)
+    assert h.mode == "cepat" and h.tau == 14 ** 12 and len(h.daftar) == 5000
+    assert h.daftar[0].W == 13 * 13      # bintang K_{1,13}: W minimum pohon = (n-1)^2
 
 
 # --------------------------------------------------------------------- CL_n, n = 3..12

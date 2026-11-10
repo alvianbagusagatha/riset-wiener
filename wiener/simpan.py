@@ -25,7 +25,9 @@ def simpan_hasil_graf(h: HasilGraf, akar: str | Path = "hasil", gambar: bool = T
         if h.contoh_min is not None:
             berkas["gambar"] += gb.gambar_pohon(
                 G, h.contoh_min.sisi, folder / f"{G.kode}_pohon_minimum",
-                judul=f"Spanning tree minimum {nt}:  W = {h.contoh_min.W}")
+                judul=f"Spanning tree minimum {nt}:  W = {h.contoh_min.W}" if h.mode == "lengkap"
+                else f"Spanning tree W terkecil yang ditemukan {nt}:  W = {h.contoh_min.W}")
+        if h.contoh_maks is not None:
             berkas["gambar"] += gb.gambar_pohon(
                 G, h.contoh_maks.sisi, folder / f"{G.kode}_pohon_maksimum",
                 judul=f"Spanning tree maksimum {nt}:  W = {h.contoh_maks.W}")
@@ -49,8 +51,8 @@ def simpan_pdf_semua_pohon(h: HasilGraf, akar: str | Path = "hasil") -> Path:
     if h.daftar_lengkap:
         return gb.gambar_kisi_pdf(G, h.daftar, Path(akar) / G.kode / f"{G.kode}_semua_pohon.pdf",
                                   judul=f"Semua {h.tau} spanning tree {G.nama} (urut menurut W)")
-    return gb.gambar_kisi_pdf(G, h.daftar, Path(akar) / G.kode / f"{G.kode}_sampel_pohon.pdf",
-                              judul=f"Sampel {len(h.daftar)} dari {h.tau} spanning tree {G.nama} (urut menurut W)")
+    return gb.gambar_kisi_pdf(G, h.daftar, Path(akar) / G.kode / f"{G.kode}_pohon_w_terkecil.pdf",
+                              judul=f"{len(h.daftar)} spanning tree W terkecil dari {h.tau} — {G.nama}")
 
 
 def simpan_hasil_pola(hp: HasilPola, akar: str | Path = "hasil") -> dict[str, list[Path]]:

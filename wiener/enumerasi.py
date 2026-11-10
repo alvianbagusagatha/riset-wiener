@@ -392,53 +392,6 @@ def enumerasi_spanning_tree(G: Graf, tau: int | None = None, simpan_daftar: bool
         daftar=daftar, waktu=time.perf_counter() - mulai, metode=metode)
 
 
-def pohon_acak_seragam(G: Graf, banyak: int, seed: int = 0, sudah: list | None = None) -> list[list[tuple[int, int]]]:
-    """Sampel `banyak` spanning tree berbeda, masing-masing acak seragam (algoritma Wilson).
-
-    Setiap pohon berpeluang sama terpilih. `sudah` = pohon yang wajib ikut (mis. contoh
-    minimum/maksimum); dihitung dalam `banyak`. Hasil sama untuk seed yang sama.
-    Hanya untuk graf terhubung dengan τ jauh lebih besar dari `banyak`.
-    """
-    import random
-
-    rng = random.Random(seed)
-    nv = G.banyak_titik
-    adj = G.tetangga()
-    adj = [sorted(adj[u]) for u in range(nv)]
-    arah = set(G.sisi)
-    hasil: list[list[tuple[int, int]]] = []
-    lihat: set[frozenset] = set()
-    for p in sudah or []:
-        k = frozenset(p)
-        if k not in lihat:
-            lihat.add(k)
-            hasil.append(sorted(p))
-    gagal = 0
-    while len(hasil) < banyak and gagal < 20 * banyak:
-        di_pohon = [False] * nv
-        berikut = [-1] * nv
-        akar = rng.randrange(nv)
-        di_pohon[akar] = True
-        for i in range(nv):
-            u = i
-            while not di_pohon[u]:                 # jalan acak sampai menyentuh pohon
-                berikut[u] = rng.choice(adj[u])
-                u = berikut[u]
-            u = i
-            while not di_pohon[u]:                 # simpan jalur tanpa putaran
-                di_pohon[u] = True
-                u = berikut[u]
-        sisi = sorted((u, berikut[u]) if (u, berikut[u]) in arah else (berikut[u], u)
-                      for u in range(nv) if u != akar)
-        k = frozenset(sisi)
-        if k in lihat:
-            gagal += 1
-            continue
-        lihat.add(k)
-        hasil.append(sisi)
-    return hasil
-
-
 def info_numba() -> str:
     if not ADA_NUMBA:
         return "Numba tidak terpasang (Python murni)"

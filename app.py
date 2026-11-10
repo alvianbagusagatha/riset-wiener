@@ -45,7 +45,8 @@ wiener._jejak_kode = _JEJAK
 from editor_graf import CONTOH_POLA, editor_graf, graf_ke_gambar, muat_ke_editor, teks_sisi
 from galeri_pohon import galeri_pohon
 from tampilan import gaya, hero
-from wiener.analisis import analisis_graf, format_angka
+from wiener.analisis import (BATAS_DAFTAR_POHON, BATAS_DETIK_OTOMATIS, BATAS_SIMPAN_PENUH, analisis_graf,
+                             format_angka, perkiraan_detik)
 from wiener.enumerasi import ADA_NUMBA, info_numba
 from wiener.graf import KELUARGA, graf_dari_gambar, graf_keluarga
 from wiener.matriks_pohon import banyak_spanning_tree
@@ -276,6 +277,11 @@ with tab_graf:
             c2.download_button("Simpan daftar sisi (.txt)", teks_sisi(isi_gambar) or "",
                                file_name=f"{nama_gambar or 'graf_gambar'}.txt", mime="text/plain",
                                icon=":material/download:", width="stretch")
+        semua = st.checkbox(
+            "Hitung semua pohon walaupun lama (sebaran W lengkap & W maksimum pasti)", key="hitung-semua",
+            help=f"Tanpa centang: bila menghitung semua pohon butuh lebih dari ±{BATAS_DETIK_OTOMATIS} detik, "
+                 f"aplikasi memakai mode cepat, yaitu langsung mencari {format_angka(BATAS_DAFTAR_POHON)} pohon "
+                 "dengan W terkecil dalam beberapa detik (tanpa sebaran W lengkap).")
         hitung = st.button("Hitung", type="primary", key="hitung-graf", icon=":material/play_arrow:",
                            width="stretch")
 
@@ -292,11 +298,18 @@ with tab_graf:
         for p in G.peringatan:
             st.warning(p)
         tau0 = banyak_spanning_tree(G)
-        if tau0 / LAJU_PERKIRAAN > 60:
-            st.info(f"τ = {format_angka(tau0)} pohon; enumerasi diperkirakan ±{durasi(tau0 / LAJU_PERKIRAAN)}. "
+        lama = perkiraan_detik(tau0)
+        cepat = not semua and lama > BATAS_DETIK_OTOMATIS and tau0 > BATAS_SIMPAN_PENUH
+        if cepat:
+            st.info(f"τ = {format_angka(tau0)} pohon; menghitung semuanya butuh ±{durasi(lama)}. Dipakai **mode "
+                    f"cepat**: langsung mencari {format_angka(BATAS_DAFTAR_POHON)} pohon dengan W terkecil "
+                    "(beberapa detik).", icon=":material/bolt:")
+        elif lama > 60:
+            st.info(f"τ = {format_angka(tau0)} pohon; enumerasi diperkirakan ±{durasi(lama)}. "
                     "Tekan Stop di pojok kanan atas untuk menghentikannya.", icon=":material/schedule:")
         bar = st.progress(0.0, text="Menghitung…")
-        h = analisis_graf(G, batas=None, progres=False, callback=pelacak_progres(bar, "Enumerasi: "))
+        h = analisis_graf(G, batas=None, progres=False, mode="cepat" if cepat else "lengkap",
+                          callback=pelacak_progres(bar, "Mencari pohon W terkecil: " if cepat else "Enumerasi: "))
         bar.progress(1.0, text="Selesai. Menyimpan keluaran…")
         st.session_state["hasil_graf"] = (h, simpan_hasil_graf(h, akar=Path(tempfile.mkdtemp(prefix="wiener_"))))
         st.session_state.pop("pdf_semua", None)
@@ -334,7 +347,24 @@ with tab_graf:
                         df = pd.DataFrame(list(e.sebaran.items()), columns=["W", "Banyak pohon"])
                         st.bar_chart(df, x="W", y="Banyak pohon", height=220)
             with t_st:
-                if e is None:
+                if e is None and h.contoh_min is not None:          # mode cepat
+                    st.info(h.catatan_enumerasi, icon=":material/bolt:")
+                    with st.container(horizontal=True):
+                        st.metric("W terkecil ditemukan", h.contoh_min.W, border=True)
+                        st.metric(f"W pohon ke-{format_angka(len(h.daftar))}", h.daftar[-1].W, border=True)
+                        st.metric("Batas bawah W(G)", d.W, border=True,
+                                  help="W(T) ≥ W(G) untuk setiap spanning tree T, karena jarak di pohon "
+                                       "tidak pernah lebih pendek daripada di graf.")
+                    with st.container(border=True):
+                        nama = f"{G.kode}_pohon_minimum"
+                        if nama in gambar:
+                            st.image(str(gambar[nama]), caption=f"Pohon dengan W terkecil yang ditemukan "
+                                                                f"(W = {h.contoh_min.W})", width=520)
+                        st.dataframe(pd.DataFrame(h.contoh_min.distribusi.baris_tabel(),
+                                                  columns=["t", "N_t", "t·N_t"]), hide_index=True)
+                    st.caption("Centang \"Hitung semua pohon\" di atas tombol Hitung untuk sebaran W lengkap, "
+                               "W minimum dan maksimum yang pasti (bisa sangat lama).")
+                elif e is None:
                     st.info(h.catatan_enumerasi)
                 else:
                     with st.container(horizontal=True):
@@ -346,6 +376,8 @@ with tab_graf:
                                f"({'cocok' if e.banyak == h.tau else 'TIDAK cocok'} dengan τ Matriks-Pohon).")
                     c1, c2 = st.columns(2)
                     for kol, jenis, contoh in ((c1, "minimum", h.contoh_min), (c2, "maksimum", h.contoh_maks)):
+                        if contoh is None:
+                            continue
                         with kol, st.container(border=True):
                             nama = f"{G.kode}_pohon_{jenis}"
                             if nama in gambar:
@@ -356,18 +388,14 @@ with tab_graf:
                     st.dataframe(pd.DataFrame(list(e.sebaran.items()), columns=["W", "Banyak pohon"]),
                                  hide_index=True)
             with t_gal:
-                if e is None:
+                if not h.daftar:
                     st.info(h.catatan_enumerasi)
                 else:
-                    if h.daftar is None:
-                        st.info("Yang ditampilkan: contoh pohon minimum dan maksimum.", icon=":material/info:")
-                    elif not h.daftar_lengkap:
-                        st.info(f"τ = {format_angka(h.tau)} pohon, jadi galeri menampilkan "
-                                f"**{format_angka(len(h.daftar))} pohon**: contoh minimum, contoh maksimum, dan "
-                                "sampel acak seragam (setiap pohon berpeluang sama terpilih), diurutkan menurut W. "
-                                "Banyak pohon per W pada saringan adalah hitungan di dalam sampel; sebaran W "
-                                "untuk semua pohon ada di tab Spanning tree. Nomor sama dengan sheet Sampel di Excel.",
-                                icon=":material/info:")
+                    if not h.daftar_lengkap:
+                        st.info(f"Galeri menampilkan {h.keterangan_daftar} Nomor 1 = W terkecil. Banyak pohon per W "
+                                "pada saringan adalah hitungan di dalam galeri ini. Nomor sama dengan sheet "
+                                "\"W terkecil\" di Excel.",
+                                icon=":material/bolt:" if h.mode == "cepat" else ":material/info:")
                     else:
                         st.caption("Semua spanning tree, nomor sama dengan daftar di Excel. Klik sebuah kartu untuk "
                                    "melihat animasinya, atau buka tab Animasi untuk memutar semua pohon.")
@@ -376,7 +404,7 @@ with tab_graf:
                         pdf = st.session_state.get("pdf_semua")
                         if pdf is None:
                             label = (f"Buat PDF semua {format_angka(h.tau)} pohon" if h.daftar_lengkap
-                                     else f"Buat PDF {format_angka(len(h.daftar))} pohon sampel")
+                                     else f"Buat PDF {format_angka(len(h.daftar))} pohon W terkecil")
                             st.button(label, icon=":material/picture_as_pdf:", on_click=_buat_pdf_semua, args=(h,))
                         else:
                             st.download_button(pdf.name, pdf.read_bytes(), file_name=pdf.name, mime="application/pdf",
@@ -397,7 +425,8 @@ with tab_graf:
                                               columns=["t", "Banyak", "Pasangan"]), hide_index=True)
                 if h.daftar is not None:
                     st.markdown(f"**Daftar semua {format_angka(len(h.daftar))} spanning tree**" if h.daftar_lengkap else
-                                f"**Sampel {format_angka(len(h.daftar))} dari {format_angka(h.tau)} spanning tree**")
+                                f"**{format_angka(len(h.daftar))} spanning tree dengan W terkecil "
+                                f"(dari τ = {format_angka(h.tau)})**")
                     D = max(max(t.distribusi.N) for t in h.daftar)
                     st.dataframe(pd.DataFrame(
                         [[t.nomor, ", ".join(G.nama_sisi(s) for s in t.sisi)]
