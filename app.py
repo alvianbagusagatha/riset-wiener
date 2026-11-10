@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import io
 import json
+import sys
 import tempfile
 import time
 import zipfile
@@ -11,6 +12,35 @@ from pathlib import Path
 
 import pandas as pd
 import streamlit as st
+
+# ---------------------------------------------------------------------------
+# Kode baru tanpa restart. Saat aplikasi di-update sambil berjalan (mis. Streamlit
+# Cloud setelah git push), Streamlit hanya menjalankan ulang app.py; modul lain
+# (wiener, galeri_pohon, ...) tetap versi lama di memori. Di sini modul proyek
+# dimuat ulang bila berkasnya berubah, dan hasil lama di sesi dibuang.
+# ---------------------------------------------------------------------------
+_AKAR = Path(__file__).resolve().parent
+_MODUL_PROYEK = ("wiener", "editor_graf", "galeri_pohon", "tampilan")
+
+
+def _jejak_kode() -> str:
+    berkas = sorted(_AKAR.glob("wiener/*.py")) + [_AKAR / f"{m}.py" for m in _MODUL_PROYEK[1:]]
+    return "|".join(f"{p.name}:{p.stat().st_mtime_ns}:{p.stat().st_size}" for p in berkas if p.exists())
+
+
+_JEJAK = _jejak_kode()
+if "wiener" in sys.modules and getattr(sys.modules["wiener"], "_jejak_kode", None) != _JEJAK:
+    for _nama in [m for m in sys.modules if m.split(".")[0] in _MODUL_PROYEK]:
+        del sys.modules[_nama]
+    st.cache_data.clear()
+if st.session_state.get("_jejak_kode") != _JEJAK:
+    for _kunci in ("hasil_graf", "hasil_pola", "pdf_semua"):
+        st.session_state.pop(_kunci, None)
+    st.session_state["_jejak_kode"] = _JEJAK
+
+import wiener  # noqa: E402
+
+wiener._jejak_kode = _JEJAK
 
 from editor_graf import CONTOH_POLA, editor_graf, graf_ke_gambar, muat_ke_editor, teks_sisi
 from galeri_pohon import galeri_pohon
